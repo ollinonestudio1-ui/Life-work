@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Motivation & Planner</title>
+  <link rel="manifest" href="manifest.json" />
+  <link rel="icon" href="icons/icon-192.png" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <header class="hero">
+    <h1>💡 Daily Motivation</h1>
+    <p id="motivation" class="quote"></p>
+    <div class="actions">
+      <button id="btnRefresh">🔄 New Motivation</button>
+      <button id="btnNotify">🔔 Enable Notifications</button>
+    </div>
+  </header>
+
+  <main class="grid">
+    <a class="card" href="timetable.html">📅 Timetable</a>
+    <a class="card" href="expenses.html">💰 Expenses</a>
+    <a class="card" href="calculator.html">🧮 Calculator</a>
+    <a class="card" href="notes.html">📝 Notes</a>
+  </main>
+
+  <footer>
+    <small>Made with ❤️ — PWA ready</small>
+  </footer>
+
+  <script>
+    // Register Service Worker
+    if ("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js");
+
+    // Motivation lines
+    const quotes = [
+      "Believe in yourself and all that you are.",
+      "Every day is a new beginning.",
+      "Push yourself, because no one else is going to do it for you.",
+      "Great things never come from comfort zones.",
+      "Dream it. Wish it. Do it.",
+      "Don’t stop when you’re tired. Stop when you’re done.",
+      "Success is the sum of small efforts.",
+      "Stay positive, work hard, make it happen."
+    ];
+    function showMotivation() {
+      const i = Math.floor(Math.random() * quotes.length);
+      document.getElementById("motivation").textContent = quotes[i];
+    }
+    document.getElementById("btnRefresh").addEventListener("click", showMotivation);
+    document.addEventListener("DOMContentLoaded", showMotivation);
+
+    // Notification permission
+    document.getElementById("btnNotify").addEventListener("click", async () => {
+      if (!("Notification" in window)) return alert("Notifications not supported");
+      const perm = await Notification.requestPermission();
+      alert(perm === "granted" ? "✅ Notifications enabled" : "❌ Notifications blocked");
+    });
+  </script>
+</body>
+</html>

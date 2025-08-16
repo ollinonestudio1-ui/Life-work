@@ -1,0 +1,94 @@
+<!-- Notes Page -->
+<div id="notes" class="page">
+  <h2>📝 Notes</h2>
+
+  <!-- Writing Area -->
+  <div id="noteEditor" style="display: none;">
+    <input type="text" id="noteTitle" placeholder="Enter Title">
+    <textarea id="noteContent" rows="10" placeholder="Write your note here..."></textarea>
+    <div style="margin-top:10px;">
+      <button onclick="saveNote()">💾 Save</button>
+      <button onclick="closeEditor()">⬅ Back</button>
+    </div>
+  </div>
+
+  <!-- Notes List -->
+  <div id="notesHome">
+    <button onclick="openEditor()">➕ Add New Note</button>
+    <h3>📂 Saved Notes</h3>
+    <div id="notesList"></div>
+  </div>
+
+</div>
+
+<script>
+  // Open editor for new note
+  function openEditor(editIndex = null) {
+    document.getElementById("noteEditor").style.display = "block";
+    document.getElementById("notesHome").style.display = "none";
+
+    if (editIndex !== null) {
+      let notes = JSON.parse(localStorage.getItem("notes")) || [];
+      let note = notes[editIndex];
+      document.getElementById("noteTitle").value = note.title;
+      document.getElementById("noteContent").value = note.content;
+      document.getElementById("noteEditor").setAttribute("data-edit", editIndex);
+    } else {
+      document.getElementById("noteTitle").value = "";
+      document.getElementById("noteContent").value = "";
+      document.getElementById("noteEditor").removeAttribute("data-edit");
+    }
+  }
+
+  // Close editor back to list
+  function closeEditor() {
+    document.getElementById("noteEditor").style.display = "none";
+    document.getElementById("notesHome").style.display = "block";
+    loadNotes();
+  }
+
+  // Save or Update Note
+  function saveNote() {
+    let title = document.getElementById("noteTitle").value.trim();
+    let content = document.getElementById("noteContent").value.trim();
+
+    if (!title || !content) {
+      alert("Please enter both title and content!");
+      return;
+    }
+
+    let notes = JSON.parse(localStorage.getItem("notes")) || [];
+    let editIndex = document.getElementById("noteEditor").getAttribute("data-edit");
+
+    if (editIndex !== null) {
+      notes[editIndex] = { title, content }; // update existing
+    } else {
+      notes.push({ title, content }); // add new
+    }
+
+    localStorage.setItem("notes", JSON.stringify(notes));
+    closeEditor();
+  }
+
+  // Load Notes List
+  function loadNotes() {
+    let notes = JSON.parse(localStorage.getItem("notes")) || [];
+    let list = document.getElementById("notesList");
+    list.innerHTML = "";
+
+    notes.forEach((note, index) => {
+      let div = document.createElement("div");
+      div.className = "note-item";
+      div.style.padding = "10px";
+      div.style.border = "1px solid #ccc";
+      div.style.margin = "5px 0";
+      div.style.cursor = "pointer";
+      div.innerHTML = `<b>${note.title}</b><br><small>${note.content.substring(0,30)}...</small>`;
+      div.onclick = () => openEditor(index);
+      list.appendChild(div);
+    });
+  }
+
+  // Load notes on page load
+  window.onload = loadNotes;
+</script>

@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Calculator</title>
+  <link rel="manifest" href="manifest.json" />
+  <link rel="icon" href="icons/icon-192.png" />
+  <link rel="stylesheet" href="style.css"/>
+</head>
+<body>
+  <nav class="topnav">
+    <a href="index.html">⬅ Home</a>
+    <span>🧮 Calculator</span>
+  </nav>
+
+  <section class="panel">
+    <input type="text" id="calcInput" placeholder="0" class="calc-input"/>
+    <div class="btns">
+      <button data-op="+">+</button>
+      <button data-op="-">−</button>
+      <button data-op="*">×</button>
+      <button data-op="/">÷</button>
+      <button id="eq">=</button>
+      <button id="clr" class="danger">C</button>
+    </div>
+    <p>Result: <b id="calcResult">0</b></p>
+  </section>
+
+  <script>
+    if ("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js");
+
+    let expr = "";
+    document.querySelectorAll("[data-op]").forEach(b=>{
+      b.addEventListener("click", ()=>{
+        expr += (document.getElementById("calcInput").value || "0") + b.dataset.op;
+        document.getElementById("calcInput").value = "";
+      });
+    });
+    document.getElementById("eq").addEventListener("click", ()=>{
+      expr += (document.getElementById("calcInput").value || "0");
+      try {
+        const res = Function(`"use strict";return (${expr})`)();
+        document.getElementById("calcResult").textContent = res;
+      } catch(e){ document.getElementById("calcResult").textContent = "Error"; }
+      expr = "";
+    });
+    document.getElementById("clr").addEventListener("click", ()=>{
+      expr=""; document.getElementById("calcInput").value=""; document.getElementById("calcResult").textContent="0";
+    });
+  </script>
+</body>
+</html>

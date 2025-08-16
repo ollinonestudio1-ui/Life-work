@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Timetable</title>
+  <link rel="manifest" href="manifest.json" />
+  <link rel="icon" href="icons/icon-192.png" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <nav class="topnav">
+    <a href="index.html">⬅ Home</a>
+    <span>📅 Timetable</span>
+  </nav>
+
+  <section class="panel">
+    <div class="row">
+      <label>Date</label>
+      <input type="date" id="taskDate" />
+    </div>
+    <div class="row">
+      <input type="time" id="taskTime" />
+      <input type="text" id="taskText" placeholder="Enter task" />
+      <button id="addTaskBtn">➕ Add Task</button>
+    </div>
+    <ul id="taskList" class="list"></ul>
+  </section>
+
+  <script>
+    if ("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js");
+
+    // helpers
+    const keyFor = (date) => "tasks_" + date;
+
+    function loadTasks() {
+      const date = document.getElementById("taskDate").value;
+      const list = document.getElementById("taskList");
+      list.innerHTML = "";
+      const items = JSON.parse(localStorage.getItem(keyFor(date)) || "[]");
+      items
+        .sort((a,b)=>a.time.localeCompare(b.time))
+        .forEach((item, idx) => {
+          const li = document.createElement("li");
+          li.textContent = `${item.time} — ${item.text}`;
+
+          const del = document.createElement("button");
+          del.className = "mini danger";
+          del.textContent = "Delete";
+          del.onclick = () => {
+            items.splice(idx, 1);
+            localStorage.setItem(keyFor(date), JSON.stringify(items));
+            loadTasks();
+          };
+
+          li.appendChild(del);
+          list.appendChild(li);
+        });
+    }
+
+    function scheduleNotification(title, dateStr, timeStr) {
+      if (Notification.permission !== "granted") return;
+      const [y, m, d] = dateStr.split("-").map(Number);
+      const [hh, mm] = timeStr.split(":").map(Number);
+      const when = new Date(y, m - 1, d, hh, mm, 0, 0);
+      const delay = when.getTime() - Date.now();
+      if (delay <= 0) return; // past time
+      setTimeout(() => {
+        new Notification("⏰ Reminder", { body: title, icon: "icons/icon-192.png" });
+      }, delay);
+    }
+
+    document.addEventListener("DOMContentLoaded", () => {
+      const dp = document.getElementById("taskDate");
+      dp.valueAsDate = new Date();
+      loadTasks();
+
+      document.getElementById("addTaskBtn").addEventListener("click", () => {
+        const date = dp.value;
+        const time = document.getElementById("taskTime").value;
+        const text = document.getElementById("taskText").value.trim();
+        if (!date || !time || !text) return alert("Enter date, time, task");
+
+        const key = keyFor(date);
+        const items = JSON.parse(localStorage.getItem(key) || "[]");
+        items.push({ time, text });
+        localStorage.setItem(key, JSON.stringify(items));
+        document.getElementById("taskText").value = "";
+        loadTasks();
+        scheduleNotification(`${text} at ${time}`, date, time);
+      });
+
+      dp.addEventListener("change", loadTasks);
+    });
+  </script>
+</body></html>

@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Expenses & Budget</title>
+  <link rel="manifest" href="manifest.json" />
+  <link rel="icon" href="icons/icon-192.png" />
+  <link rel="stylesheet" href="style.css"/>
+</head>
+<body>
+  <nav class="topnav">
+    <a href="index.html">⬅ Home</a>
+    <span>💰 Expenses</span>
+  </nav>
+
+  <section class="panel">
+    <h3>Set Monthly Budget</h3>
+    <div class="row">
+      <label>Month</label>
+      <input type="month" id="monthPick" />
+      <input type="number" id="budgetInput" placeholder="₹ Budget amount" />
+      <button id="saveBudget">💾 Save Budget</button>
+    </div>
+    <p>Budget for <span id="monthLabel"></span> : ₹<b id="budgetView">0</b></p>
+  </section>
+
+  <section class="panel">
+    <h3>Add Expense</h3>
+    <div class="row">
+      <input type="date" id="expDate" />
+      <input type="text" id="expNote" placeholder="Note (e.g., Lunch)"/>
+      <input type="number" id="expAmt" placeholder="₹ Amount"/>
+      <button id="addExp">➕ Add</button>
+    </div>
+    <ul id="expList" class="list"></ul>
+    <p>Total Spent in <span id="monthLabel2"></span>: ₹<b id="totalView">0</b>
+      <span id="statusMsg"></span>
+    </p>
+  </section>
+
+  <script>
+    if ("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js");
+
+    const budgetKey = (ym) => "budget_" + ym;      // ym = YYYY-MM
+    const expenseKey = (ym) => "expenses_" + ym;
+
+    function ymFromDateStr(dateStr){
+      const [y,m] = dateStr.split("-"); return `${y}-${m}`;
+    }
+
+    function loadBudget(ym){
+      const v = Number(localStorage.getItem(budgetKey(ym)) || 0);
+      document.getElementById("budgetView").textContent = v;
+      document.getElementById("monthLabel").textContent = ym;
+      document.getElementById("monthLabel2").textContent = ym;
+      return v;
+    }
+
+    function renderExpenses(ym){
+      const list = document.getElementById("expList");
+      list.innerHTML = "";
+      const items = JSON.parse(localStorage.getItem(expenseKey(ym)) || "[]");
+      let total = 0;
+      items.forEach((it, idx) => {
+        total += Number(it.amt)||0;
+        const li = document.createElement("li");
+        li.innerHTML = `<b>${it.date}</b> — ₹${it.amt} <i>${it.note || ""}</i>`;
+        const del = document.createElement("button");
+        del.className = "mini danger";
+        del.textContent = "Delete";
+        del.onclick = () => {
+          items.splice(idx,1);
+          localStorage.setItem(expenseKey(ym), JSON.stringify(items));
+          renderAll(ym);
+        };
+        li.appendChild(del);
+        list.appendChild(li);
+      });
+      document.getElementById("totalView").textContent = total;
+      const budget = Number(localStorage.getItem(budgetKey(ym)) || 0);
+      const status = document.getElementById("statusMsg");
+      if (budget > 0 && total > budget) {
+        status.textContent = ` — Over by ₹${total - budget}`;
+        status.className = "bad";
+      } else if (budget > 0) {
+        status.textContent = ` — Remaining ₹${budget - total}`;
+        status.className = "good";
+      } else {
+        status.textContent = "";
+        status.className = "";
+      }
+    }
+
+    function renderAll(ym){
+      loadBudget(ym);
+      renderExpenses(ym);
+    }
+
+    document.addEventListener("DOMContentLoaded", () => {
+      const now = new Date();
+      const ymDefault = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,"0")}`;
+      const todayStr = now.toISOString().slice(0,10);
+
+      document.getElementById("monthPick").value = ymDefault;
+      document.getElementById("expDate").value = todayStr;
+
+      renderAll(ymDefault);
+
+      document.getElementById("saveBudget").addEventListener("click", () => {
+        const ym = document.getElementById("monthPick").value;
+        const amt = Number(document.getElementById("budgetInput").value || 0);
+        localStorage.setItem(budgetKey(ym), amt);
+        renderAll(ym);
+        document.getElementById("budgetInput").value = "";
+      });
+
+      document.getElementById("addExp").addEventListener("click", () => {
+        const date = document.getElementById("expDate").value;
+        const note = document.getElementById("expNote").value.trim();
+        const amt = Number(document.getElementById("expAmt").value);
+        if (!date || !amt) return alert("Enter date and amount");
+        const ym = ymFromDateStr(date);
+        const items = JSON.parse(localStorage.getItem(expenseKey(ym)) || "[]");
+        items.push({ date, note, amt });
+        localStorage.setItem(expenseKey(ym), JSON.stringify(items));
+        document.getElementById("expNote").value = "";
+        document.getElementById("expAmt").value = "";
+        renderAll(ym);
+        document.getElementById("monthPick").value = ym;
+      });
+
+      document.getElementById("monthPick").addEventListener("change", e => {
+        renderAll(e.target.value);
+      });
+    });
+  </script>
+</body>
+</html>
